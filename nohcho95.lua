@@ -1,6 +1,6 @@
 -- ============================================================
--- NOHCHO⁹⁵ HUB — Muscle Legends (v11.1 PLAYER FOLLOW)
--- Ищет игроков в зоне, телепортируется и качается рядом
+-- NOHCHO⁹⁵ HUB — Muscle Legends (v11.2 STABLE)
+-- Исправлен запуск | Поиск игроков | Стабильный UI
 -- Ключ: Ц1онтро
 -- ============================================================
 
@@ -8,7 +8,6 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 
@@ -22,14 +21,6 @@ local DESCENT_POS = Vector3.new(-1836.67, 84.76, -10974.69)
 
 local function GetRemote(name)
     local RS = game:GetService("ReplicatedStorage")
-    local custom = RS:FindFirstChild("rEvents") or RS:FindFirstChild("Remotes") or RS:FindFirstChild("Events")
-    if custom then
-        for _, obj in pairs(custom:GetDescendants()) do
-            if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) and string.find(string.lower(obj.Name), string.lower(name)) then
-                return obj
-            end
-        end
-    end
     for _, obj in pairs(RS:GetDescendants()) do
         if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) and string.find(string.lower(obj.Name), string.lower(name)) then
             return obj
@@ -63,9 +54,7 @@ local function Notify(text)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.Parent = sg
     Instance.new("UICorner", lbl).CornerRadius = UDim.new(0, 8)
-    local stroke = Instance.new("UIStroke", lbl)
-    stroke.Color = Color3.fromRGB(150, 0, 255)
-    stroke.Thickness = 2
+    Instance.new("UIStroke", lbl).Color = Color3.fromRGB(150, 0, 255)
     TweenService:Create(lbl, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -150, 0, 20)}):Play()
     task.delay(3, function()
         TweenService:Create(lbl, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.5, -150, 0, -60)}):Play()
@@ -74,12 +63,13 @@ local function Notify(text)
     end)
 end
 
--- KEY SYSTEM
+-- KEY SYSTEM (Упрощенный и стабильный)
 local keyGui = Instance.new("ScreenGui")
 keyGui.Name = "NOHCHO95_Key"
 keyGui.ResetOnSpawn = false
 pcall(function() keyGui.Parent = CoreGui end)
 if not keyGui.Parent then keyGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
 local keyBg = Instance.new("Frame")
 keyBg.Size = UDim2.new(0, 340, 0, 200)
 keyBg.Position = UDim2.new(0.5, -170, 0.5, -100)
@@ -89,9 +79,7 @@ keyBg.Active = true
 keyBg.Draggable = true
 keyBg.Parent = keyGui
 Instance.new("UICorner", keyBg).CornerRadius = UDim.new(0, 12)
-local keyStroke = Instance.new("UIStroke", keyBg)
-keyStroke.Color = Color3.fromRGB(120, 0, 200)
-keyStroke.Thickness = 2
+Instance.new("UIStroke", keyBg).Color = Color3.fromRGB(120, 0, 200)
 
 local keyHeader = Instance.new("TextLabel")
 keyHeader.Size = UDim2.new(1, 0, 0, 50)
@@ -134,45 +122,28 @@ keySubmit.TextSize = 15
 keySubmit.Parent = keyBg
 Instance.new("UICorner", keySubmit).CornerRadius = UDim.new(0, 8)
 
--- ОСНОВНОЙ ХАБ
+-- ГЛАВНАЯ ФУНКЦИЯ
 local function LoadHub()
-    local reconnected = IS_RECONNECTING
-    if reconnected then
-        IS_RECONNECTING = false
-        Notify("Auto Reconnect: перезапуск...")
-    end
-
+    print("[NOHCHO] Скрипт запускается...")
+    
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "NOHCHO95_Hub"
     screenGui.ResetOnSpawn = false
     pcall(function() screenGui.Parent = CoreGui end)
     if not screenGui.Parent then screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
-    local toggleBtn = Instance.new("ImageButton")
-    toggleBtn.Size = UDim2.new(0, 50, 0, 50)
-    toggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    toggleBtn.Image = ANIME_ICON_ID
-    toggleBtn.Visible = false
-    toggleBtn.Parent = screenGui
-    Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", toggleBtn).Color = Color3.fromRGB(150, 0, 255)
-
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 360, 0, 550)
     mainFrame.Position = UDim2.new(0.5, -180, 0.5, -275)
     mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    mainFrame.BackgroundTransparency = 0.2
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = screenGui
     Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
-    local mainStroke = Instance.new("UIStroke", mainFrame)
-    mainStroke.Color = Color3.fromRGB(120, 0, 200)
-    mainStroke.Thickness = 2
-    
+    Instance.new("UIStroke", mainFrame).Color = Color3.fromRGB(120, 0, 200)
+
     local bgImage = Instance.new("ImageLabel")
     bgImage.Size = UDim2.new(1, 0, 1, 0)
     bgImage.BackgroundTransparency = 1
@@ -180,7 +151,7 @@ local function LoadHub()
     bgImage.ScaleType = Enum.ScaleType.Crop
     bgImage.ZIndex = 1
     bgImage.Parent = mainFrame
-    
+
     local bgDarken = Instance.new("Frame")
     bgDarken.Size = UDim2.new(1, 0, 1, 0)
     bgDarken.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -188,9 +159,6 @@ local function LoadHub()
     bgDarken.BorderSizePixel = 0
     bgDarken.ZIndex = 1
     bgDarken.Parent = mainFrame
-
-    mainFrame.Size = UDim2.new(0, 0, 0, 0)
-    TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 360, 0, 550)}):Play()
 
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, 50)
@@ -233,10 +201,20 @@ local function LoadHub()
     closeBtn.Parent = titleBar
     Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
 
-    minBtn.MouseButton1Click:Connect(function() mainFrame.Visible = false; toggleBtn.Visible = true end)
-    toggleBtn.MouseButton1Click:Connect(function() toggleBtn.Visible = false; mainFrame.Visible = true end)
+    -- Сворачивание
+    local isMinimized = false
+    minBtn.MouseButton1Click:Connect(function()
+        isMinimized = not isMinimized
+        if isMinimized then
+            mainFrame.Visible = false
+        else
+            mainFrame.Visible = true
+        end
+    end)
+    
     closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
+    -- СТАТЫ
     local statsFrame = Instance.new("Frame")
     statsFrame.Size = UDim2.new(1, -20, 0, 90)
     statsFrame.Position = UDim2.new(0, 10, 0, 60)
@@ -259,39 +237,13 @@ local function LoadHub()
     statsText.ZIndex = 3
     statsText.Parent = statsFrame
 
-    local lastStrength, lastRebirths, lastTime = 0, 0, tick()
-    task.spawn(function()
-        while screenGui.Parent do
-            local stats = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Stats")
-            if stats then
-                local strengthObj = stats:FindFirstChild("Strength") or stats:FindFirstChild("Power")
-                local rebirthObj = stats:FindFirstChild("Rebirths") or stats:FindFirstChild("Rebirth")
-                local currentStr = strengthObj and strengthObj.Value or 0
-                local currentReb = rebirthObj and rebirthObj.Value or 0
-                local timePassed = tick() - lastTime
-                if timePassed >= 5 then
-                    local strDiff, rebDiff = currentStr - lastStrength, currentReb - lastRebirths
-                    local strPerHour, rebPerHour = (strDiff / timePassed) * 3600, (rebDiff / timePassed) * 3600
-                    statsText.Text = string.format(
-                        " Strength: %s | Rebirths: %d\n Gain/h: %s | Gain/d: %s\n Reb/h: %.1f | Reb/d: %.1f",
-                        FormatNumber(currentStr), currentReb, FormatNumber(strPerHour), FormatNumber(strPerHour*24), rebPerHour, rebPerHour*24
-                    )
-                    lastStrength, lastRebirths, lastTime = currentStr, currentReb, tick()
-                end
-            else
-                statsText.Text = "Ожидание данных..."
-            end
-            task.wait(1)
-        end
-    end)
-
+    -- Скролл
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1, -20, 1, -170)
     scroll.Position = UDim2.new(0, 10, 0, 160)
     scroll.BackgroundTransparency = 1
     scroll.BorderSizePixel = 0
     scroll.ScrollBarThickness = 4
-    scroll.ScrollBarImageColor3 = Color3.fromRGB(150, 0, 255)
     scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scroll.ZIndex = 2
@@ -300,7 +252,7 @@ local function LoadHub()
     listLayout.Padding = UDim.new(0, 6)
     listLayout.Parent = scroll
 
-    local function AddModule(name, callback, isButton)
+    local function AddModule(name, callback)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -10, 0, 40)
         btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
@@ -312,127 +264,87 @@ local function LoadHub()
         btn.ZIndex = 3
         btn.Parent = scroll
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-        local bStroke = Instance.new("UIStroke", btn)
-        bStroke.Color = Color3.fromRGB(80, 80, 100)
-
+        
         local state = false
         local thread = nil
-        if isButton then
-            btn.MouseButton1Click:Connect(function() if callback then pcall(callback) end end)
-        else
-            btn.MouseButton1Click:Connect(function()
-                state = not state
-                if state then
-                    btn.Text = "  " .. name .. " [ON]"
-                    btn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
-                    bStroke.Color = Color3.fromRGB(255, 255, 255)
-                    if callback then thread = task.spawn(function() callback(function() return state end) end) end
-                else
-                    btn.Text = "  " .. name .. " [OFF]"
-                    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-                    bStroke.Color = Color3.fromRGB(80, 80, 100)
-                    if thread then pcall(task.cancel, thread) end
-                end
-            end)
-        end
-        return btn
+        btn.MouseButton1Click:Connect(function()
+            state = not state
+            if state then
+                btn.Text = "  " .. name .. " [ON]"
+                btn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
+                if callback then thread = task.spawn(function() callback(function() return state end) end) end
+            else
+                btn.Text = "  " .. name .. " [OFF]"
+                btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                if thread then pcall(task.cancel, thread) end
+            end
+        end)
     end
 
-    -- 1. ГЛАВНАЯ ФУНКЦИЯ (Поиск игрока и кач)
-    local alienFarmBtn = AddModule("Alien Boss Auto Train (Follow)", function(isOn)
+    -- 1. ФОЛЛОУ ФАРМ (Скрипт ищет игрока)
+    AddModule("Alien Boss Follow & Train", function(isOn)
         task.spawn(function()
             while isOn() do
                 pcall(function()
                     local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
+                    if char and char:FindFirstChild("HumanoidRootPart") then
                         
+                        -- Ищем ближайшего игрока к зоне
                         local targetPos = nil
-                        
-                        -- 1. Ищем игрока в зоне Alien
                         for _, p in pairs(Players:GetPlayers()) do
                             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                local pPos = p.Character.HumanoidRootPart.Position
-                                if (pPos - DESCENT_POS).Magnitude < 200 then
-                                    targetPos = pPos
+                                if (p.Character.HumanoidRootPart.Position - DESCENT_POS).Magnitude < 200 then
+                                    targetPos = p.Character.HumanoidRootPart.Position
                                     break 
                                 end
                             end
                         end
 
-                        -- 2. Если игрок найден, летим к нему
+                        -- Если игрок есть, летим к нему
                         if targetPos then
-                            if (char.HumanoidRootPart.Position - targetPos).Magnitude > 10 then
-                                local startPos = char.HumanoidRootPart.Position
-                                local distance = (targetPos - startPos).Magnitude
-                                local steps = math.ceil(distance / 10)
-                                for i = 1, steps do
-                                    if not isOn() then break end
-                                    char.HumanoidRootPart.CFrame = CFrame.new(startPos:Lerp(targetPos, i/steps))
-                                    task.wait(0.01)
-                                end
-                                task.wait(0.5)
+                            if (char.HumanoidRootPart.Position - targetPos).Magnitude > 15 then
+                                char.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+                                task.wait(1)
                             end
                         else
-                            -- Если игроков нет, летим сами через портал
+                            -- Если никого нет, летим сами
                             if (char.HumanoidRootPart.Position - DESCENT_POS).Magnitude > 500 then
                                 char.HumanoidRootPart.CFrame = CFrame.new(PRE_PORTAL_POS)
                                 task.wait(0.5)
                                 pcall(function()
-                                    local args = { "travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("alienGymCircle") }
-                                    game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
+                                    local area = workspace:FindFirstChild("areaCircles")
+                                    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("rEvents") and game:GetService("ReplicatedStorage").rEvents:FindFirstChild("areaTravelRemote")
+                                    if area and area:FindFirstChild("alienGymCircle") and remote then
+                                        remote:InvokeServer("travelToArea", area.alienGymCircle)
+                                    end
                                 end)
                                 task.wait(5) 
                             end
                         end
 
-                        -- 3. Ищем ближайший свободный тренажер
-                        local closestPrompt = nil
-                        local closestPart = nil
-                        local shortestDist = math.huge
-                        
+                        -- Ищем кнопку тренажера и зажимаем
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if obj:IsA("ProximityPrompt") and obj.Enabled then
                                 local parent = obj.Parent
                                 if parent and parent:IsA("BasePart") then
-                                    local model = parent.Parent
-                                    local name = model and model.Name or parent.Name
-                                    if string.find(string.lower(name), "alien") then
-                                        local dist = (parent.Position - char.HumanoidRootPart.Position).Magnitude
-                                        if dist < shortestDist then
-                                            closestPrompt = obj
-                                            closestPart = parent
-                                            shortestDist = dist
+                                    local modelName = parent.Parent and parent.Parent.Name or ""
+                                    if string.find(string.lower(modelName), "alien") or string.find(string.lower(parent.Name), "alien") then
+                                        if (parent.Position - char.HumanoidRootPart.Position).Magnitude < 20 then
+                                            pcall(function() fireproximityprompt(obj) end)
+                                            pcall(function()
+                                                obj:InputHoldBegin()
+                                                task.wait(1)
+                                                obj:InputHoldEnd()
+                                            end)
+                                            break
                                         end
                                     end
                                 end
                             end
                         end
-
-                        -- 4. Подходим к тренажеру и зажимаем
-                        if closestPrompt and closestPart then
-                            if shortestDist > 8 then
-                                local targetPartPos = closestPart.Position + Vector3.new(0, 3, 0)
-                                local startPos = char.HumanoidRootPart.Position
-                                local distance = (targetPartPos - startPos).Magnitude
-                                local steps = math.ceil(distance / 5)
-                                for i = 1, steps do
-                                    if not isOn() then break end
-                                    char.HumanoidRootPart.CFrame = CFrame.new(startPos:Lerp(targetPartPos, i/steps))
-                                    task.wait(0.02)
-                                end
-                            else
-                                pcall(function() fireproximityprompt(closestPrompt) end)
-                                pcall(function()
-                                    closestPrompt:InputHoldBegin()
-                                    task.wait(1.5)
-                                    closestPrompt:InputHoldEnd()
-                                end)
-                                task.wait(2)
-                            end
-                        end
                     end
                 end)
-                task.wait(1)
+                task.wait(2)
             end
         end)
     end)
@@ -446,27 +358,7 @@ local function LoadHub()
         end
     end)
 
-    -- 3. AUTO EQUIP PET
-    AddModule("Auto Equip Pet", function(isOn)
-        local equipRemote = GetRemote("equip")
-        while isOn() do
-            pcall(function() if equipRemote then equipRemote:FireServer("Galactic Overlord") end)
-            task.wait(1)
-            pcall(function() if equipRemote then equipRemote:FireServer("Mythic Boss Pet") end)
-            task.wait(3)
-        end
-    end)
-
-    -- 4. AUTO SELL PETS
-    AddModule("Auto Sell Pets", function(isOn)
-        local sellRemote = GetRemote("sell")
-        while isOn() do
-            pcall(function() if sellRemote then sellRemote:FireServer() end end)
-            task.wait(3)
-        end
-    end)
-
-    -- 5. FAST PUNCH
+    -- 3. FAST PUNCH
     AddModule("Fast Punch", function(isOn)
         while isOn() do
             pcall(function()
@@ -479,7 +371,7 @@ local function LoadHub()
         end
     end)
 
-    -- 6. AUTO RECONNECT
+    -- 4. AUTO RECONNECT
     AddModule("Auto Reconnect", function(isOn)
         local promptGui = CoreGui:FindFirstChild("RobloxPromptGui")
         local overlay = promptGui and promptGui:FindFirstChild("promptOverlay")
@@ -500,7 +392,7 @@ local function LoadHub()
         if conn then conn:Disconnect() end
     end)
 
-    -- 7. ANTI-AFK
+    -- 5. ANTI-AFK
     AddModule("Anti-AFK", function(isOn)
         local conn = LocalPlayer.Idled:Connect(function()
             if not isOn() then return end
@@ -509,29 +401,11 @@ local function LoadHub()
         while isOn() do task.wait(60) end
         if conn then conn:Disconnect() end
     end)
-
-    -- ТЕЛЕПОРТЫ (Кнопки)
-    AddModule("TP: Industrial", function() 
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1285, 23, -4690)
-            Notify("Телепорт: Industrial")
-        end
-    end, true)
-
-    AddModule("TP: Muscle King Gym", function() 
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-8646, 17, -5738)
-            Notify("Телепорт: Muscle King")
-        end
-    end, true)
-
-    if reconnected then
-        task.wait(2)
-        alienFarmBtn.MouseButton1Click:Fire()
-        Notify("Фарм возобновлен!")
-    end
+    
+    print("[NOHCHO] Hub успешно загружен!")
 end
 
+-- ЗАПУСК
 local function tryLogin()
     if keyInput.Text == CORRECT_KEY then
         keyStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -545,13 +419,6 @@ local function tryLogin()
         keyInput.Text = ""
     end
 end
-
-LocalPlayer.OnTeleport:Connect(function(teleportState)
-    if teleportState == Enum.TeleportState.Started and IS_RECONNECTING then
-        task.wait(5)
-        pcall(function() keyGui:Destroy(); LoadHub() end)
-    end
-end)
 
 keySubmit.MouseButton1Click:Connect(tryLogin)
 keyInput.FocusLost:Connect(function(entered) if entered then tryLogin() end end)
