@@ -1,6 +1,6 @@
 -- ============================================================
--- NOHCHO⁹⁵ HUB — Muscle Legends (v9.3 ALIEN GYM FIX)
--- Жесткий телепорт к боссу + Авто-поиск кнопок (ProximityPrompt)
+-- NOHCHO⁹⁵ HUB — Muscle Legends (v10.0 ANIME BOY EDITION)
+-- Увеличенный интерфейс | Аниме-мальчик | Luna Teleport
 -- Ключ: Ц1онтро
 -- ============================================================
 
@@ -14,7 +14,13 @@ local TweenService = game:GetService("TweenService")
 
 local CORRECT_KEY = "Ц1онтро"
 local IS_RECONNECTING = false
-local ANIME_IMAGE_ID = "rbxassetid://13160576240" 
+
+-- >>> БЕЗОПАСНЫЕ ID КАРТИНОК (Не заблокированы) <<<
+local ANIME_BG_ID = "rbxassetid://11809751316" -- Аниме мальчик на фон
+local ANIME_ICON_ID = "rbxassetid://10201746380" -- Аниме мальчик (иконка)
+
+local PRE_PORTAL_POS = Vector3.new(7.515656471252441, 14.683902740478516, -78.0965576171875)
+local DESCENT_POS = Vector3.new(-1836.67, 84.76, -10974.69)
 
 local function GetRemote(name)
     local RS = game:GetService("ReplicatedStorage")
@@ -135,7 +141,7 @@ keySubmit.TextSize = 15
 keySubmit.Parent = keyBg
 Instance.new("UICorner", keySubmit).CornerRadius = UDim.new(0, 8)
 
--- ОСНОВНОЙ ХАБ
+-- ОСНОВНОЙ ХАБ (Увеличенный)
 local function LoadHub()
     local reconnected = IS_RECONNECTING
     if reconnected then
@@ -149,21 +155,23 @@ local function LoadHub()
     pcall(function() screenGui.Parent = CoreGui end)
     if not screenGui.Parent then screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
+    -- Иконка для сворачивания (Аниме)
     local toggleBtn = Instance.new("ImageButton")
     toggleBtn.Size = UDim2.new(0, 50, 0, 50)
     toggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
     toggleBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    toggleBtn.Image = "rbxassetid://6031280882"
-    toggleBtn.ImageColor3 = Color3.fromRGB(150, 0, 255)
+    toggleBtn.Image = ANIME_ICON_ID
     toggleBtn.Visible = false
     toggleBtn.Parent = screenGui
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1, 0)
+    Instance.new("UIStroke", toggleBtn).Color = Color3.fromRGB(150, 0, 255)
 
+    -- Главное окно (Сделал БОЛЬШЕ: 360x550)
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 320, 0, 480)
-    mainFrame.Position = UDim2.new(0.5, -160, 0.5, -240)
+    mainFrame.Size = UDim2.new(0, 360, 0, 550)
+    mainFrame.Position = UDim2.new(0.5, -180, 0.5, -275)
     mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    mainFrame.BackgroundTransparency = 0.35 
+    mainFrame.BackgroundTransparency = 0.3
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
@@ -174,10 +182,11 @@ local function LoadHub()
     mainStroke.Color = Color3.fromRGB(120, 0, 200)
     mainStroke.Thickness = 1.5
     
+    -- ФОН (Аниме мальчик)
     local bgImage = Instance.new("ImageLabel")
     bgImage.Size = UDim2.new(1, 0, 1, 0)
     bgImage.BackgroundTransparency = 1
-    bgImage.Image = ANIME_IMAGE_ID
+    bgImage.Image = ANIME_BG_ID
     bgImage.ScaleType = Enum.ScaleType.Crop
     bgImage.ZIndex = 1
     bgImage.Parent = mainFrame
@@ -185,13 +194,13 @@ local function LoadHub()
     local bgDarken = Instance.new("Frame")
     bgDarken.Size = UDim2.new(1, 0, 1, 0)
     bgDarken.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    bgDarken.BackgroundTransparency = 0.4 
+    bgDarken.BackgroundTransparency = 0.45 
     bgDarken.BorderSizePixel = 0
     bgDarken.ZIndex = 1
     bgDarken.Parent = mainFrame
 
     mainFrame.Size = UDim2.new(0, 0, 0, 0)
-    TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 320, 0, 480)}):Play()
+    TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 360, 0, 550)}):Play()
 
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, 50)
@@ -201,11 +210,21 @@ local function LoadHub()
     titleBar.Parent = mainFrame
     Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
 
+    -- Аниме иконка в шапке
+    local titleIcon = Instance.new("ImageLabel")
+    titleIcon.Size = UDim2.new(0, 36, 0, 36)
+    titleIcon.Position = UDim2.new(0, 10, 0, 7)
+    titleIcon.BackgroundTransparency = 1
+    titleIcon.Image = ANIME_ICON_ID
+    titleIcon.ZIndex = 3
+    titleIcon.Parent = titleBar
+    Instance.new("UICorner", titleIcon).CornerRadius = UDim.new(1, 0)
+
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -100, 1, 0)
-    title.Position = UDim2.new(0, 50, 0, 0)
+    title.Size = UDim2.new(1, -120, 1, 0)
+    title.Position = UDim2.new(0, 55, 0, 0)
     title.BackgroundTransparency = 1
-    title.Text = "NOHCHO⁹⁵ | TENKA"
+    title.Text = "NOHCHO⁹⁵ | ANIME BOY"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBold
     title.TextSize = 16
@@ -241,8 +260,9 @@ local function LoadHub()
     toggleBtn.MouseButton1Click:Connect(function() toggleBtn.Visible = false; mainFrame.Visible = true end)
     closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
+    -- Stats (Увеличил панель)
     local statsFrame = Instance.new("Frame")
-    statsFrame.Size = UDim2.new(1, -20, 0, 85)
+    statsFrame.Size = UDim2.new(1, -20, 0, 90)
     statsFrame.Position = UDim2.new(0, 10, 0, 60)
     statsFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
     statsFrame.BackgroundTransparency = 0.3
@@ -257,7 +277,7 @@ local function LoadHub()
     statsText.Text = "Загрузка статов..."
     statsText.TextColor3 = Color3.fromRGB(255, 255, 255)
     statsText.Font = Enum.Font.Code
-    statsText.TextSize = 13
+    statsText.TextSize = 14
     statsText.TextXAlignment = Enum.TextXAlignment.Left
     statsText.TextYAlignment = Enum.TextYAlignment.Top
     statsText.ZIndex = 3
@@ -289,9 +309,10 @@ local function LoadHub()
         end
     end)
 
+    -- Скролл (Увеличил под размер окна)
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1, -20, 1, -160)
-    scroll.Position = UDim2.new(0, 10, 0, 155)
+    scroll.Size = UDim2.new(1, -20, 1, -170)
+    scroll.Position = UDim2.new(0, 10, 0, 160)
     scroll.BackgroundTransparency = 1
     scroll.BorderSizePixel = 0
     scroll.ScrollBarThickness = 4
@@ -306,13 +327,13 @@ local function LoadHub()
 
     local function AddModule(name, callback, isButton)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, -10, 0, 38)
+        btn.Size = UDim2.new(1, -10, 0, 40)
         btn.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
         btn.BackgroundTransparency = 0.2
         btn.Text = "  " .. name
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         btn.Font = Enum.Font.GothamSemibold
-        btn.TextSize = 13
+        btn.TextSize = 14
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.ZIndex = 3
         btn.Parent = scroll
@@ -338,34 +359,33 @@ local function LoadHub()
         return btn
     end
 
-    -- ГЛАВНАЯ ФУНКЦИЯ (ИСПРАВЛЕНА)
+    -- ГЛАВНАЯ ФУНКЦИЯ
     local alienFarmBtn = AddModule("Alien Boss Auto Train + Rebirth", function(isOn)
         local rebRemote = GetRemote("rebirth")
-        local ALIEN_CFRAME = CFrame.new(-1836.67, 84.76, -10974.69) -- Координаты зала
         
-        -- Поток 1: Гарантированный телепорт и поиск кнопок
         task.spawn(function()
             while isOn() do
                 pcall(function()
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("HumanoidRootPart") then
-                        
-                        -- 1. Сначала ВСЕГДА летим на базу к боссу, если мы не там
-                        if (char.HumanoidRootPart.Position - ALIEN_CFRAME.Position).Magnitude > 100 then
-                            char.HumanoidRootPart.CFrame = ALIEN_CFRAME
-                            task.wait(1.5) -- Ждем, пока прогрузятся тренажеры
+                        if (char.HumanoidRootPart.Position - DESCENT_POS).Magnitude > 100 then
+                            char.HumanoidRootPart.CFrame = CFrame.new(PRE_PORTAL_POS)
+                            task.wait(0.5)
+                            pcall(function()
+                                local args = { "travelToArea", workspace:WaitForChild("areaCircles"):WaitForChild("alienGymCircle") }
+                                game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("areaTravelRemote"):InvokeServer(unpack(args))
+                            end)
+                            task.wait(2) 
                         end
 
-                        -- 2. Ищем ближайшую кнопку с рукой (ProximityPrompt)
                         local closestPrompt = nil
                         local shortestDist = math.huge
-                        
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if obj:IsA("ProximityPrompt") then
                                 local parentPart = obj.Parent
                                 if parentPart and parentPart:IsA("BasePart") then
                                     local dist = (parentPart.Position - char.HumanoidRootPart.Position).Magnitude
-                                    if dist < shortestDist then
+                                    if dist < shortestDist and dist < 100 then
                                         closestPrompt = obj
                                         shortestDist = dist
                                     end
@@ -373,31 +393,23 @@ local function LoadHub()
                             end
                         end
 
-                        -- 3. Если нашли кнопку - телепортируемся к ней и зажимаем
-                        if closestPrompt and shortestDist < 150 then
-                            -- Пододвигаемся вплотную к тренажеру
-                            if closestPrompt.Parent then
-                                char.HumanoidRootPart.CFrame = closestPrompt.Parent.CFrame * CFrame.new(0, 3, 0)
-                                task.wait(0.2)
-                            end
-                            
-                            pcall(function()
-                                closestPrompt:InputHoldBegin()
-                                task.wait(closestPrompt.HoldDuration or 0.5)
-                                closestPrompt:InputHoldEnd()
-                            end)
-                            task.wait(1) -- Ждем, чтобы персонаж начал качаться
+                        if closestPrompt then
+                            pcall(function() fireproximityprompt(closestPrompt) end)
+                            task.wait(2) 
                         end
                     end
                 end)
-                task.wait(1.5)
+                task.wait(2)
             end
         end)
 
-        -- Поток 2: Спам кликами для заполнения шкалы
         task.spawn(function()
             while isOn() do
                 pcall(function()
+                    if LocalPlayer:FindFirstChild("muscleEvent") then
+                        LocalPlayer.muscleEvent:FireServer("punch", "rightHand")
+                        LocalPlayer.muscleEvent:FireServer("punch", "leftHand")
+                    end
                     VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
                     task.wait(0.01)
                     VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
@@ -406,7 +418,6 @@ local function LoadHub()
             end
         end)
 
-        -- Поток 3: Авто-ребёрс
         task.spawn(function()
             while isOn() do
                 pcall(function() if rebRemote then rebRemote:InvokeServer("rebirthRequest") end end)
