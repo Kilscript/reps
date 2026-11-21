@@ -1,6 +1,6 @@
 -- ============================================================
--- NOHCHO⁹⁵ HUB — Muscle Legends (v11.2 STABLE)
--- Исправлен запуск | Поиск игроков | Стабильный UI
+-- NOHCHO⁹⁵ HUB — Muscle Legends (v11.3 ALIEN GYM ONLY)
+-- Игнорирует игроков | Ищет только тренажеры | Авто-Ребёрс
 -- Ключ: Ц1онтро
 -- ============================================================
 
@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 
@@ -63,7 +64,7 @@ local function Notify(text)
     end)
 end
 
--- KEY SYSTEM (Упрощенный и стабильный)
+-- KEY SYSTEM
 local keyGui = Instance.new("ScreenGui")
 keyGui.Name = "NOHCHO95_Key"
 keyGui.ResetOnSpawn = false
@@ -122,7 +123,7 @@ keySubmit.TextSize = 15
 keySubmit.Parent = keyBg
 Instance.new("UICorner", keySubmit).CornerRadius = UDim.new(0, 8)
 
--- ГЛАВНАЯ ФУНКЦИЯ
+-- ОСНОВНОЙ ХАБ
 local function LoadHub()
     print("[NOHCHO] Скрипт запускается...")
     
@@ -171,7 +172,7 @@ local function LoadHub()
     title.Size = UDim2.new(1, -120, 1, 0)
     title.Position = UDim2.new(0, 50, 0, 0)
     title.BackgroundTransparency = 1
-    title.Text = "NOHCHO⁹⁵ | MEGA"
+    title.Text = "NOHCHO⁹⁵ | GYM"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBold
     title.TextSize = 18
@@ -201,17 +202,11 @@ local function LoadHub()
     closeBtn.Parent = titleBar
     Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Сворачивание
     local isMinimized = false
     minBtn.MouseButton1Click:Connect(function()
         isMinimized = not isMinimized
-        if isMinimized then
-            mainFrame.Visible = false
-        else
-            mainFrame.Visible = true
-        end
+        mainFrame.Visible = not isMinimized
     end)
-    
     closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
     -- СТАТЫ
@@ -237,7 +232,32 @@ local function LoadHub()
     statsText.ZIndex = 3
     statsText.Parent = statsFrame
 
-    -- Скролл
+    local lastStrength, lastRebirths, lastTime = 0, 0, tick()
+    task.spawn(function()
+        while screenGui.Parent do
+            local stats = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Stats")
+            if stats then
+                local strengthObj = stats:FindFirstChild("Strength") or stats:FindFirstChild("Power")
+                local rebirthObj = stats:FindFirstChild("Rebirths") or stats:FindFirstChild("Rebirth")
+                local currentStr = strengthObj and strengthObj.Value or 0
+                local currentReb = rebirthObj and rebirthObj.Value or 0
+                local timePassed = tick() - lastTime
+                if timePassed >= 5 then
+                    local strDiff, rebDiff = currentStr - lastStrength, currentReb - lastRebirths
+                    local strPerHour, rebPerHour = (strDiff / timePassed) * 3600, (rebDiff / timePassed) * 3600
+                    statsText.Text = string.format(
+                        " Strength: %s | Rebirths: %d\n Gain/h: %s | Gain/d: %s\n Reb/h: %.1f | Reb/d: %.1f",
+                        FormatNumber(currentStr), currentReb, FormatNumber(strPerHour), FormatNumber(strPerHour*24), rebPerHour, rebPerHour*24
+                    )
+                    lastStrength, lastRebirths, lastTime = currentStr, currentReb, tick()
+                end
+            else
+                statsText.Text = "Ожидание данных..."
+            end
+            task.wait(1)
+        end
+    end)
+
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1, -20, 1, -170)
     scroll.Position = UDim2.new(0, 10, 0, 160)
@@ -281,34 +301,66 @@ local function LoadHub()
         end)
     end
 
-    -- 1. ФОЛЛОУ ФАРМ (Скрипт ищет игрока)
-    AddModule("Alien Boss Follow & Train", function(isOn)
+    -- 1. ФИКС: ТОЛЬКО ТРЕНАЖЕРЫ (Игнорируем игроков)
+    AddModule("Alien Gym Auto Train", function(isOn)
+        local rebRemote = GetRemote("rebirth")
         task.spawn(function()
             while isOn() do
                 pcall(function()
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("HumanoidRootPart") then
                         
-                        -- Ищем ближайшего игрока к зоне
-                        local targetPos = nil
-                        for _, p in pairs(Players:GetPlayers()) do
-                            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                if (p.Character.HumanoidRootPart.Position - DESCENT_POS).Magnitude < 200 then
-                                    targetPos = p.Character.HumanoidRootPart.Position
-                                    break 
+                        -- 1. Ищем тренажеры Alien
+                        local targetPrompt = nil
+                        local targetPart = nil
+                        local shortestDist = math.huge
+
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if obj:IsA("ProximityPrompt") and obj.Enabled then
+                                local parent = obj.Parent
+                                if parent and parent:IsA("BasePart") then
+                                    local model = parent.Parent
+                                    local name = model and model.Name or parent.Name
+                                    -- Ищем строго тренажеры
+                                    if string.find(string.lower(name), "alien squat") or string.find(string.lower(name), "alien bench") or string.find(string.lower(name), "alien bar lift") or string.find(string.lower(name), "alien boulder") then
+                                        local dist = (parent.Position - char.HumanoidRootPart.Position).Magnitude
+                                        if dist < shortestDist then
+                                            targetPrompt = obj
+                                            targetPart = parent
+                                            shortestDist = dist
+                                        end
+                                    end
                                 end
                             end
                         end
 
-                        -- Если игрок есть, летим к нему
-                        if targetPos then
-                            if (char.HumanoidRootPart.Position - targetPos).Magnitude > 15 then
-                                char.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
-                                task.wait(1)
+                        -- 2. Если нашли свободный тренажер — летим и качаемся
+                        if targetPrompt and targetPart then
+                            if shortestDist > 8 then
+                                -- Плавный подлет
+                                local targetPos = targetPart.Position + Vector3.new(0, 3, 0)
+                                local startPos = char.HumanoidRootPart.Position
+                                local distance = (targetPos - startPos).Magnitude
+                                local steps = math.ceil(distance / 5)
+                                
+                                for i = 1, steps do
+                                    if not isOn() then break end
+                                    char.HumanoidRootPart.CFrame = CFrame.new(startPos:Lerp(targetPos, i/steps))
+                                    task.wait(0.02)
+                                end
+                            else
+                                -- Нажимаем кнопку
+                                pcall(function() fireproximityprompt(targetPrompt) end)
+                                pcall(function()
+                                    targetPrompt:InputHoldBegin()
+                                    task.wait(1.5)
+                                    targetPrompt:InputHoldEnd()
+                                end)
+                                task.wait(2) -- Качаемся
                             end
                         else
-                            -- Если никого нет, летим сами
-                            if (char.HumanoidRootPart.Position - DESCENT_POS).Magnitude > 500 then
+                            -- 3. Если тренажеров нет (мы не в зоне) — летим туда
+                            if (char.HumanoidRootPart.Position - DESCENT_POS).Magnitude > 200 then
                                 char.HumanoidRootPart.CFrame = CFrame.new(PRE_PORTAL_POS)
                                 task.wait(0.5)
                                 pcall(function()
@@ -321,35 +373,35 @@ local function LoadHub()
                                 task.wait(5) 
                             end
                         end
-
-                        -- Ищем кнопку тренажера и зажимаем
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj:IsA("ProximityPrompt") and obj.Enabled then
-                                local parent = obj.Parent
-                                if parent and parent:IsA("BasePart") then
-                                    local modelName = parent.Parent and parent.Parent.Name or ""
-                                    if string.find(string.lower(modelName), "alien") or string.find(string.lower(parent.Name), "alien") then
-                                        if (parent.Position - char.HumanoidRootPart.Position).Magnitude < 20 then
-                                            pcall(function() fireproximityprompt(obj) end)
-                                            pcall(function()
-                                                obj:InputHoldBegin()
-                                                task.wait(1)
-                                                obj:InputHoldEnd()
-                                            end)
-                                            break
-                                        end
-                                    end
-                                end
-                            end
-                        end
                     end
                 end)
+                task.wait(1)
+            end
+        end)
+
+        -- Поток спама ударов для шкалы (делаем параллельно)
+        task.spawn(function()
+            while isOn() do
+                pcall(function()
+                    if LocalPlayer:FindFirstChild("muscleEvent") then
+                        LocalPlayer.muscleEvent:FireServer("punch", "rightHand")
+                        LocalPlayer.muscleEvent:FireServer("punch", "leftHand")
+                    end
+                end)
+                task.wait(0.05)
+            end
+        end)
+
+        -- Поток авто-ребёрса
+        task.spawn(function()
+            while isOn() do
+                pcall(function() if rebRemote then rebRemote:InvokeServer("rebirthRequest") end end)
                 task.wait(2)
             end
         end)
     end)
 
-    -- 2. FAST REBIRTH
+    -- ОСТАЛЬНЫЕ ФУНКЦИИ
     AddModule("Fast Rebirth", function(isOn)
         local rebRemote = GetRemote("rebirth")
         while isOn() do
@@ -358,7 +410,6 @@ local function LoadHub()
         end
     end)
 
-    -- 3. FAST PUNCH
     AddModule("Fast Punch", function(isOn)
         while isOn() do
             pcall(function()
@@ -371,7 +422,6 @@ local function LoadHub()
         end
     end)
 
-    -- 4. AUTO RECONNECT
     AddModule("Auto Reconnect", function(isOn)
         local promptGui = CoreGui:FindFirstChild("RobloxPromptGui")
         local overlay = promptGui and promptGui:FindFirstChild("promptOverlay")
@@ -392,7 +442,6 @@ local function LoadHub()
         if conn then conn:Disconnect() end
     end)
 
-    -- 5. ANTI-AFK
     AddModule("Anti-AFK", function(isOn)
         local conn = LocalPlayer.Idled:Connect(function()
             if not isOn() then return end
@@ -401,11 +450,8 @@ local function LoadHub()
         while isOn() do task.wait(60) end
         if conn then conn:Disconnect() end
     end)
-    
-    print("[NOHCHO] Hub успешно загружен!")
 end
 
--- ЗАПУСК
 local function tryLogin()
     if keyInput.Text == CORRECT_KEY then
         keyStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
