@@ -1,7 +1,6 @@
 -- ============================================================
--- NOHCHO⁹⁵ HUB — Muscle Legends
+-- NOHCHO⁹⁵ HUB — Muscle Legends (v2.0)
 -- Ключ: Ц1онтро
--- Функции: Auto Farm, Auto Equip Pet, Auto Lift, Anti-AFK, Auto Reconnect
 -- ============================================================
 
 local Players = game:GetService("Players")
@@ -12,9 +11,7 @@ local TeleportService = game:GetService("TeleportService")
 
 local CORRECT_KEY = "Ц1онтро"
 
--- ============================================================
--- УВЕДОМЛЕНИЯ (всплывающие плашки)
--- ============================================================
+-- УВЕДОМЛЕНИЯ
 local function Notify(text)
     local sg = Instance.new("ScreenGui")
     sg.ResetOnSpawn = false
@@ -42,9 +39,7 @@ local function Notify(text)
     end)
 end
 
--- ============================================================
--- 0. KEY SYSTEM
--- ============================================================
+-- KEY SYSTEM
 local keyGui = Instance.new("ScreenGui")
 keyGui.Name = "NOHCHO95_Key"
 keyGui.ResetOnSpawn = false
@@ -105,9 +100,7 @@ keySubmit.TextSize = 14
 keySubmit.Parent = keyBg
 Instance.new("UICorner", keySubmit).CornerRadius = UDim.new(0, 6)
 
--- ============================================================
--- 1. ОСНОВНОЙ ХАБ
--- ============================================================
+-- ОСНОВНОЙ ХАБ
 local function LoadHub()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "NOHCHO95_Hub"
@@ -134,6 +127,21 @@ local function LoadHub()
     title.TextSize = 18
     title.Parent = mainFrame
     Instance.new("UICorner", title).CornerRadius = UDim.new(0, 10)
+
+    -- КНОПКА ЗАКРЫТИЯ (X)
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -35, 0, 5)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 14
+    closeBtn.Parent = mainFrame
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
 
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1, -10, 1, -50)
@@ -182,45 +190,51 @@ local function LoadHub()
         end)
     end
 
-    -- Auto Farm (Clicker)
-    AddModule("Auto Farm", function(isOn)
+    -- 1. FAST FARM (Быстрый фарм)
+    AddModule("Fast Farm", function(isOn)
+        local trainRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Train")
         while isOn() do
-            pcall(function()
-                VirtualUser:Button1Down(Vector2.new(0, 0))
+            if trainRemote then
+                pcall(function() trainRemote:FireServer() end)
                 task.wait(0.1)
-                VirtualUser:Button1Up(Vector2.new(0, 0))
-            end)
-            task.wait(0.1)
+            else
+                -- Если ремоута нет, кликаем очень быстро
+                pcall(function()
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton1(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                end)
+                task.wait(0.01)
+            end
         end
     end)
 
-    -- Auto Equip Pet
-    AddModule("Auto Equip Pet", function(isOn)
-        local PRIORITY = { "Galactic Overlord", "Mythic Boss Pet" }
-        local petsFolder = LocalPlayer:FindFirstChild("Pets")
-        local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-        local equipRemote = remotes and (remotes:FindFirstChild("EquipPet") or remotes:FindFirstChild("Equip"))
+    -- 2. AUTO REBIRTH
+    AddModule("Auto Rebirth", function(isOn)
+        local rebirthRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Rebirth")
+        if not rebirthRemote then Notify("Ребилд ремоут не найден") return end
+        while isOn() do
+            pcall(function() rebirthRemote:FireServer() end)
+            task.wait(2)
+        end
+    end)
 
-        if not petsFolder then Notify("Папка Pets не найдена") return end
+    -- 3. AUTO EQUIP PET (Исправлено)
+    AddModule("Auto Equip Pet", function(isOn)
+        local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") or game:GetService("ReplicatedStorage"):FindFirstChild("Events")
+        local equipRemote = remotes and (remotes:FindFirstChild("EquipPet") or remotes:FindFirstChild("Equip"))
         if not equipRemote then Notify("RemoteEvent EquipPet не найден") return end
 
         while isOn() do
-            for _, petName in ipairs(PRIORITY) do
-                local pet = petsFolder:FindFirstChild(petName)
-                if pet then
-                    pcall(function() equipRemote:FireServer(pet) end)
-                    print("[NOHCHO] Экипирован:", petName)
-                    break
-                end
-            end
-            task.wait(5)
+            pcall(function() equipRemote:FireServer("Galactic Overlord") end)
+            task.wait(1)
+            pcall(function() equipRemote:FireServer("Mythic Boss Pet") end)
+            task.wait(4)
         end
     end)
 
-    -- Auto Lift
+    -- 4. AUTO LIFT
     AddModule("Auto Lift", function(isOn)
-        local liftRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Events")
-            and game:GetService("ReplicatedStorage").Events:FindFirstChild("Lift")
+        local liftRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Events") and game:GetService("ReplicatedStorage").Events:FindFirstChild("Lift")
         if not liftRemote then Notify("RemoteEvent Lift не найден") return end
         while isOn() do
             pcall(function() liftRemote:FireServer() end)
@@ -228,7 +242,7 @@ local function LoadHub()
         end
     end)
 
-    -- Anti-AFK
+    -- 5. ANTI-AFK
     AddModule("Anti-AFK", function(isOn)
         local conn = LocalPlayer.Idled:Connect(function()
             if not isOn() then return end
@@ -248,36 +262,9 @@ local function LoadHub()
         if conn then conn:Disconnect() end
     end)
 
-    -- Auto Reconnect
-    AddModule("Auto Reconnect", function(isOn)
-        local promptGui = CoreGui:FindFirstChild("RobloxPromptGui")
-        local overlay = promptGui and promptGui:FindFirstChild("promptOverlay")
-        if not overlay then Notify("RobloxPromptGui не найден") return end
-        local conn = overlay.DescendantAdded:Connect(function(err)
-            if not isOn() then return end
-            if err.Name == "ErrorTitle" then
-                err:GetPropertyChangedSignal("Text"):Connect(function()
-                    if err.Text:sub(1, 12) == "Disconnected" then
-                        Notify("Дисконнект, переподключение...")
-                        task.wait(1)
-                        pcall(function()
-                            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-                        end)
-                    end
-                end)
-            end
-        end)
-        while isOn() do task.wait(1) end
-        if conn then conn:Disconnect() end
-    end)
-
     Notify("NOHCHO⁹⁵ загружен")
-    print("[NOHCHO⁹⁵] Hub готов.")
 end
 
--- ============================================================
--- 2. ЛОГИКА КЛЮЧА
--- ============================================================
 local function tryLogin()
     if keyInput.Text == CORRECT_KEY then
         keyStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
