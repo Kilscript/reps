@@ -12,7 +12,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 
-local CORRECT_KEY = "Rifat"
+local CORRECT_KEY = "Ц1онтро"
 local IS_RECONNECTING = false
 local ANIME_BG_ID = "rbxassetid://13160576240" 
 local ANIME_ICON_ID = "rbxassetid://6031075936" 
