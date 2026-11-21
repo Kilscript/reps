@@ -1,6 +1,6 @@
 -- ============================================================
--- NOHCHO⁹⁵ HUB — Muscle Legends (v9.1 TENKA EDITION)
--- Аниме фон | Стеклянный интерфейс | Все функции
+-- NOHCHO⁹⁵ HUB — Muscle Legends (v9.2 ALIEN GYM FIX)
+-- Авто-поиск тренажеров (ProximityPrompt) | Аниме фон | Все функции
 -- Ключ: Ц1онтро
 -- ============================================================
 
@@ -15,8 +15,7 @@ local TweenService = game:GetService("TweenService")
 local CORRECT_KEY = "Ц1онтро"
 local IS_RECONNECTING = false
 
--- >>> СЮДА ВСТАВЬ СВОЙ ID КАРТИНКИ ТЭНКИ <<<
--- (По умолчанию стоит тестовая аниме-картинка, чтобы скрипт точно работал)
+-- ID аниме картинки (можешь заменить на Тэнку)
 local ANIME_IMAGE_ID = "rbxassetid://13160576240" 
 
 local function GetRemote(name)
@@ -177,7 +176,7 @@ local function LoadHub()
     mainStroke.Color = Color3.fromRGB(120, 0, 200)
     mainStroke.Thickness = 1.5
     
-    -- ФОН С ТЭНКОЙ
+    -- ФОН
     local bgImage = Instance.new("ImageLabel")
     bgImage.Size = UDim2.new(1, 0, 1, 0)
     bgImage.BackgroundTransparency = 1
@@ -342,35 +341,81 @@ local function LoadHub()
         return btn
     end
 
+    -- ГЛАВНАЯ ФУНКЦИЯ: Alien Boss Train (ИСПРАВЛЕНО)
     local alienFarmBtn = AddModule("Alien Boss Auto Train + Rebirth", function(isOn)
         local rebRemote = GetRemote("rebirth")
-        local ALIEN_BOSS_CFRAME = CFrame.new(-1836.67, 84.76, -10974.69)
+        
+        -- Поток 1: Поиск тренажеров (ProximityPrompt) и телепорт
         task.spawn(function()
             while isOn() do
                 pcall(function()
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("HumanoidRootPart") then
-                        if (char.HumanoidRootPart.Position - ALIEN_BOSS_CFRAME.Position).Magnitude > 100 then
-                            char.HumanoidRootPart.CFrame = ALIEN_BOSS_CFRAME
-                            task.wait(1)
-                        end
+                        local targetPrompt = nil
+                        local targetModel = nil
+                        local shortestDistance = math.huge
+                        local charPos = char.HumanoidRootPart.Position
+
+                        -- Ищем тренажеры по всему Workspace
                         for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
-                                if (obj.Handle.Position - char.HumanoidRootPart.Position).Magnitude < 150 then
-                                    if string.find(string.lower(obj.Name), "weight") or string.find(string.lower(obj.Name), "dumbbell") then
-                                        firetouchinterest(char.HumanoidRootPart, obj.Handle, 0)
-                                        task.wait(0.1)
-                                        firetouchinterest(char.HumanoidRootPart, obj.Handle, 1)
-                                        break
+                            if obj:IsA("ProximityPrompt") or obj:IsA("Model") then
+                                local n = string.lower(obj.Name)
+                                -- Ищем именно Alien тренажеры
+                                if string.find(n, "alien") and (string.find(n, "squat") or string.find(n, "bench") or string.find(n, "lift") or string.find(n, "boulder")) then
+                                    
+                                    -- Находим позицию тренажера (Model или Part)
+                                    local pos = nil
+                                    if obj:IsA("Model") then
+                                        local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                                        if primary then pos = primary.Position end
+                                    elseif obj:IsA("ProximityPrompt") then
+                                        local parentPart = obj.Parent
+                                        if parentPart and parentPart:IsA("BasePart") then pos = parentPart.Position end
+                                    end
+
+                                    if pos then
+                                        local dist = (pos - charPos).Magnitude
+                                        if dist < shortestDistance then
+                                            -- Ищем сам Prompt внутри модели, если obj это Model
+                                            local prompt = obj
+                                            if obj:IsA("Model") then
+                                                prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                            end
+                                            
+                                            if prompt and prompt:IsA("ProximityPrompt") then
+                                                targetPrompt = prompt
+                                                targetModel = pos
+                                                shortestDistance = dist
+                                            end
+                                        end
                                     end
                                 end
                             end
                         end
+
+                        -- Если нашли тренажер - телепортируемся к нему и взаимодействуем
+                        if targetModel and targetPrompt then
+                            -- Встаем прямо перед кнопкой
+                            char.HumanoidRootPart.CFrame = CFrame.new(targetModel) * CFrame.new(0, 3, 0)
+                            task.wait(0.2) 
+                            
+                            -- Имитируем зажатие кнопки E
+                            pcall(function()
+                                targetPrompt:InputHoldBegin()
+                                task.wait(targetPrompt.HoldDuration + 0.1)
+                                targetPrompt:InputHoldEnd()
+                            end)
+                            
+                            -- Ждем немного, чтобы началась анимация кача
+                            task.wait(1)
+                        end
                     end
                 end)
-                task.wait(2)
+                task.wait(1.5) -- Проверка каждые 1.5 секунды
             end
         end)
+
+        -- Поток 2: Спам кликами (для заполнения шкалы)
         task.spawn(function()
             while isOn() do
                 pcall(function()
@@ -381,6 +426,8 @@ local function LoadHub()
                 task.wait(0.01)
             end
         end)
+
+        -- Поток 3: Авто-ребёрс
         task.spawn(function()
             while isOn() do
                 pcall(function() if rebRemote then rebRemote:InvokeServer("rebirthRequest") end end)
