@@ -1,6 +1,6 @@
 -- ============================================================
--- NOHCHO⁹⁵ HUB — Muscle Legends (v11.4 STRICT GYM)
--- 100% Игнорирует игроков | Ищет только точные имена тренажеров
+-- NOHCHO⁹⁵ HUB — Muscle Legends (v11.5 ULTIMATE FIX)
+-- Ищет ЛЮБУЮ кнопку взаимодействия (без привязки к названиям)
 -- Ключ: Ц1онтро
 -- ============================================================
 
@@ -18,28 +18,6 @@ local ANIME_ICON_ID = "rbxassetid://6031075936"
 
 local PRE_PORTAL_POS = Vector3.new(7.51, 14.68, -78.09)
 local DESCENT_POS = Vector3.new(-1836.67, 84.76, -10974.69)
-
--- ЖЕСТКИЙ СПИСОК ТРЕНАЖЕРОВ (Только они!)
-local VALID_GYM_NAMES = {
-    "alien squat",
-    "alien bench",
-    "alien bar lift",
-    "alien boulder",
-    "alien weight",
-    "alien dumbbell"
-}
-
-local function IsValidGym(name)
-    local n = string.lower(name)
-    for _, valid in ipairs(VALID_GYM_NAMES) do
-        if string.find(n, valid) then
-            -- Если в названии есть слово "boss", сразу отменяем
-            if string.find(n, "boss") then return false end
-            return true
-        end
-    end
-    return false
-end
 
 local function GetRemote(name)
     local RS = game:GetService("ReplicatedStorage")
@@ -146,7 +124,7 @@ Instance.new("UICorner", keySubmit).CornerRadius = UDim.new(0, 8)
 
 -- ОСНОВНОЙ ХАБ
 local function LoadHub()
-    print("[NOHCHO] Загрузка строгого режима GYM...")
+    print("[NOHCHO] Загрузка ULTIMATE версии...")
     
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "NOHCHO95_Hub"
@@ -193,7 +171,7 @@ local function LoadHub()
     title.Size = UDim2.new(1, -120, 1, 0)
     title.Position = UDim2.new(0, 50, 0, 0)
     title.BackgroundTransparency = 1
-    title.Text = "NOHCHO⁹⁵ | STRICT"
+    title.Text = "NOHCHO⁹⁵ | ULTIMATE"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBold
     title.TextSize = 18
@@ -322,10 +300,10 @@ local function LoadHub()
         end)
     end
 
-    -- 1. СТРОГИЙ ФАРМ НА ТРЕНАЖЕРАХ
-    AddModule("Alien Gym Strict Farm", function(isOn)
+    -- 1. ФИКС: ИЩЕМ ЛЮБУЮ КНОПКУ
+    AddModule("Alien Gym Ultimate Farm", function(isOn)
         local rebRemote = GetRemote("rebirth")
-        local triedToEnter = false -- Защита от спама портала
+        local enteredZone = false
         
         task.spawn(function()
             while isOn() do
@@ -337,31 +315,28 @@ local function LoadHub()
                         local targetPart = nil
                         local shortestDist = math.huge
 
-                        -- Ищем СТРОГО по названиям
+                        -- Сканируем ВСЁ, ищем любую кнопку
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if obj:IsA("ProximityPrompt") and obj.Enabled then
                                 local parent = obj.Parent
                                 if parent and parent:IsA("BasePart") then
-                                    local model = parent.Parent
-                                    local fullName = parent.Name .. " " .. (model and model.Name or "")
-                                    
-                                    if IsValidGym(fullName) then
-                                        local dist = (parent.Position - char.HumanoidRootPart.Position).Magnitude
-                                        if dist < shortestDist then
-                                            targetPrompt = obj
-                                            targetPart = parent
-                                            shortestDist = dist
-                                        end
+                                    local dist = (parent.Position - char.HumanoidRootPart.Position).Magnitude
+                                    -- Если кнопка ближе 150 стадов
+                                    if dist < shortestDist and dist < 150 then
+                                        targetPrompt = obj
+                                        targetPart = parent
+                                        shortestDist = dist
                                     end
                                 end
                             end
                         end
 
                         if targetPrompt and targetPart then
-                            triedToEnter = false -- Мы в зоне, сбрасываем флаг входа
+                            enteredZone = true -- Мы в зоне!
+                            print("[NOHCHO] Найдена кнопка у:", targetPart.Parent and targetPart.Parent.Name or targetPart.Name)
                             
                             if shortestDist > 8 then
-                                -- Плавный подлет
+                                -- Плавно подлетаем
                                 local targetPos = targetPart.Position + Vector3.new(0, 3, 0)
                                 local startPos = char.HumanoidRootPart.Position
                                 local distance = (targetPos - startPos).Magnitude
@@ -373,7 +348,7 @@ local function LoadHub()
                                     task.wait(0.02)
                                 end
                             else
-                                -- Жмем кнопку тренажера
+                                -- Жмем кнопку
                                 pcall(function() fireproximityprompt(targetPrompt) end)
                                 pcall(function()
                                     targetPrompt:InputHoldBegin()
@@ -383,10 +358,10 @@ local function LoadHub()
                                 task.wait(2) 
                             end
                         else
-                            -- Если тренажеров нет
+                            -- Если кнопок нет (мы не в зоне)
                             if (char.HumanoidRootPart.Position - DESCENT_POS).Magnitude > 300 then
-                                if not triedToEnter then
-                                    triedToEnter = true
+                                if not enteredZone then
+                                    print("[NOHCHO] Не нашел кнопок, лечу в зону...")
                                     char.HumanoidRootPart.CFrame = CFrame.new(PRE_PORTAL_POS)
                                     task.wait(0.5)
                                     pcall(function()
